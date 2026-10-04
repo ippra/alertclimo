@@ -1,0 +1,78 @@
+# Assemble the site and publish the beta to GitHub Pages.
+#
+# The beta lives at https://ippra.github.io/alertclimo/ and is built with
+# NAC_CHANNEL=beta: a Beta label in the masthead, a noindex tag and a
+# robots.txt that disallows everything. The production site at
+# ippra.net/alertclimo is not deployed from here; it is built without the
+# channel variable and copied to our own server. See README.md, "Deploying".
+#
+# GitHub cannot rebuild the data: the pipeline reads an 18 GB archive that
+# lives on the build machine. So the counts the pipeline produces
+# (outputs/05_site_data/, 66 MB) are kept on the site-data branch, and this
+# workflow runs only the last step, 06, which joins them to the front end in
+# site/. A push to main therefore publishes a front-end change at once; new
+# data is published by pushing site-data and then running this workflow from
+# the Actions tab, or with the next push to main.
+
+name: Publish beta
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch the built data
+        uses: actions/checkout@v4
+        with:
+          ref: site-data
+          path: outputs/05_site_data
+
+      # 06 copies the whole data directory into the site.
+      - name: Drop the data checkout's git directory
+        run: rm -rf outputs/05_site_data/.git
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: |
+            any::tidyverse
+            any::jsonlite
+            any::here
+
+      - name: Assemble site
+        env:
+          NAC_CHANNEL: beta
+        run: Rscript 06_build_dashboard.R
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: outputs/06_site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

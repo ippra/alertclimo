@@ -1,4 +1,4 @@
-# nws_product_climatology - NWS Alert Climatology
+# alertclimo - AlertClimo
 
 A static site that maps how often the National Weather Service puts each U.S.
 county under every kind of watch, warning, advisory and statement, 2010-2025:
@@ -13,6 +13,9 @@ tornado figures run about 50% above the equivalent count here (days with a
 tornado watch or warning in effect), though the two correlate at 0.95 across
 counties. The site handles each of those differently (see Decisions below) and
 needs no server.
+
+- **Beta:** https://ippra.github.io/alertclimo/
+- **Release:** https://ippra.net/alertclimo
 
 The other analyses in this folder (`outlooks_data/`, `extended_outlooks_data/`,
 `watch_data/`, `tsmf_wwa_data/`) are unchanged and not part of the site.
@@ -242,7 +245,8 @@ manifest, and are simplified to about 4% and 0.6% of their vertices.
 
 `site/` is hand-edited: `index.html`, `engine.js`, `engine.css`, and MapLibre
 GL JS 6.10.0 vendored under `site/assets/vendor/`. The IPPRA bar, panel and
-controls are the same as ok_fire_dash's.
+controls are the same as okfirewarn's, with the institute's masthead and its
+light, dark and greyscale themes under "Adjust colors".
 
 `04_build_grid.R` writes, for each land product, `<product>_days_<hash>.bin.gz`
 and `<product>_alerts_<hash>.bin.gz`: gzipped unsigned 8-bit integers (16-bit
@@ -264,34 +268,74 @@ dark maps and all labels, Esri World Imagery for satellite. If they fail, the
 counties still draw on a plain background. Over imagery the colors run darkest
 for the most, as on the light map, with the fills partly transparent.
 
-## Hosting
+## Deploying
 
-`outputs/06_site/` is the whole site: plain static files, no server code, so it
-can be copied to ippra.net like the other dashboards or published with GitHub
-Pages.
+Two deployments of one build. `outputs/06_site/` is the whole site: plain
+static files, no server code.
 
-- `index.html` must be served with `Cache-Control: no-cache`.
+**Beta: GitHub Pages, on every push to `main`.**
+`.github/workflows/publish.yml` publishes https://ippra.github.io/alertclimo/.
+GitHub cannot rebuild the data, because the pipeline reads an 18 GB archive
+that lives on the build machine. So the workflow runs only step 06: it takes
+the front end from `main` and the built data from the `site-data` branch,
+which holds the contents of `outputs/05_site_data/` and nothing else. It sets
+`NAC_CHANNEL=beta`, which puts a Beta label beside the masthead title, adds a
+`noindex` tag and writes a `robots.txt` that disallows everything, so the beta
+is never found in place of production. The repository's Pages source must be
+set to GitHub Actions (Settings, Pages).
+
+A change to `site/` is published by pushing it to `main`. New data, after the
+pipeline has run on the build machine, is published by replacing the
+`site-data` branch and then running the workflow:
+
+```sh
+git clone --branch site-data https://github.com/ippra/alertclimo.git /tmp/nac-data
+rsync -a --delete --exclude .git outputs/05_site_data/ /tmp/nac-data/
+git -C /tmp/nac-data add -A && git -C /tmp/nac-data commit -m "Site data" && git -C /tmp/nac-data push
+```
+
+Then press "Run workflow" on the Actions tab, or push to `main`. A failed run
+publishes nothing: the beta keeps its last good build and GitHub emails the
+repository owner.
+
+**Production: ippra.net, by hand. Matt deploys it.** No pipeline run is
+needed, only R for step 06. From a clone of `main`:
+
+```
+git clone --branch site-data --depth 1 https://github.com/ippra/alertclimo.git outputs/05_site_data
+rm -rf outputs/05_site_data/.git
+Rscript 06_build_dashboard.R
+rsync -av --delete outputs/06_site/ <ippra.net host>:<docroot>/alertclimo/
+```
+
+Leave `NAC_CHANNEL` unset: that is what makes it the production build, with no
+Beta label and no `noindex`. R packages for this step: `tidyverse`,
+`jsonlite`, `here`.
+
+The site runs under any path, with relative URLs. Server settings:
+
+- Serve `index.html` with `Cache-Control: no-cache` (on the entry URLs
+  `/alertclimo`, `/alertclimo/` and `/alertclimo/index.html`), so a new deploy
+  is seen without a hard refresh.
 - `engine.js`, `engine.css` and the data files carry a `?v=<build>` stamp, and
-  product files a content hash, so they can be cached as long as a host likes.
+  product files a content hash, so they can be cached as long as the server
+  likes. The stamp changes when either the data or the front end does.
+- The grid files are already gzipped. Serve them as they are or with
+  `Content-Encoding: gzip`; the page handles both.
 - The site is 68 MB on disk, but a visit loads only the manifest, the outlines
   and the products it opens: about 1 MB compressed for the first view, plus
   0.1-2 MB for each product viewed on the grid.
-- The grid files are already gzipped. A host may serve them as they are or with
-  `Content-Encoding: gzip`; the page handles both.
 
-### GitHub Pages
+After deploying, open https://ippra.net/alertclimo and check two things: the
+map loads, and there is no Beta label beside "AlertClimo" in the masthead.
 
-The built site is published from the `gh-pages` branch, which holds only the
-contents of `outputs/06_site/` plus an empty `.nojekyll`. The archive the
-pipeline needs lives on the build machine, not in the repository, so GitHub
-cannot rebuild the site itself. To republish after a rebuild:
+Link to it from ippra.net as `/alertclimo/?from=<path of the linking page>`,
+for example `/alertclimo/?from=/tools`. A visitor who arrives that way gets a
+"Back to IPPRA" link in the black bar that returns them to that page; anyone
+else sees the institute's name there.
 
-```sh
-git clone --branch gh-pages https://github.com/ippra/nws_product_climatology.git /tmp/nac-pages
-rsync -a --delete --exclude .git outputs/06_site/ /tmp/nac-pages/
-touch /tmp/nac-pages/.nojekyll
-git -C /tmp/nac-pages add -A && git -C /tmp/nac-pages commit -m "Publish site" && git -C /tmp/nac-pages push
-```
+The data covers whole calendar years, so the release needs republishing only
+when a year is added (see Building and previewing) or the site changes.
 
 `06_build_dashboard.R` builds into `outputs/06_site.next` and swaps it in, so a
 host serving `outputs/06_site` never sees a half-copied site.

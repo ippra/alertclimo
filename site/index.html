@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="alertclimo">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script>
-// Some static handlers serve /alerts without adding the trailing slash, which
+// Some static handlers serve /alertclimo without the trailing slash, which
 // breaks every relative URL in this page. Canonicalize first.
 (function(){var p=location.pathname;
 if(!/\/$/.test(p)&&!/\.html$/.test(p)){location.replace(p+"/"+location.search+location.hash);}})();
 </script>
-<title>NWS Alert Climatology — Watches, Warnings and Advisories by County</title>
+<title>AlertClimo — NWS Watches, Warnings and Advisories by County</title>
 <meta name="description" content="How often the National Weather Service puts each U.S. county under every kind of watch, warning and advisory, 2010 to 2025.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='12' height='12' rx='2' fill='%239ec5f4'/%3E%3Crect x='17' y='3' width='12' height='12' rx='2' fill='%233987e5'/%3E%3Crect x='3' y='17' width='12' height='12' rx='2' fill='%23184f95'/%3E%3Crect x='17' y='17' width='12' height='12' rx='2' fill='%230d366b'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="./assets/vendor/maplibre-gl-6.10.0/maplibre-gl.css">
@@ -37,6 +37,19 @@ window.addEventListener("load", function () { setTimeout(function () {
     d.join("\n") + "\nbuild " + window.NAC_BUILD + " — " + navigator.userAgent;
   l.classList.add("boot-failed");
 }, 10000); });
+</script>
+<script>
+// Theme precedence: ?theme= deep link, then the viewer's pick for this tab,
+// then the light default. Set here so the page never paints in the wrong one.
+(function () {
+  var ids = ["alertclimo", "dark", "greyscale"];
+  var pick = null;
+  try {
+    pick = new URLSearchParams(location.search).get("theme") ||
+      sessionStorage.getItem("alertclimo-theme");
+  } catch (e) { /* private mode */ }
+  if (ids.indexOf(pick) !== -1) document.documentElement.dataset.theme = pick;
+})();
 </script>
 </head>
 <body>
@@ -91,9 +104,28 @@ window.addEventListener("load", function () { setTimeout(function () {
 })();
 </script>
 
+<!-- The masthead the institute's dashboards share (s3ok_dash, errs). The
+     Beta badge ships hidden; 06_build_dashboard.R shows it in the beta build
+     only. -->
+<header id="navbar">
+  <span id="nav-title">
+    <span class="brand-name">AlertClimo<span class="brand-beta" hidden>Beta</span></span>
+    <span class="brand-sub">NWS watches, warnings &amp; advisories by county</span>
+  </span>
+  <div id="theme-switch">
+    <button id="theme-btn" type="button" title="Adjust colors" aria-haspopup="true" aria-expanded="false">&#9680; Adjust colors</button>
+    <div id="theme-menu">
+      <button type="button" data-theme="alertclimo"><span class="swatch" style="background:#443A83"></span>AlertClimo</button>
+      <button type="button" data-theme="dark"><span class="swatch" style="background:#0f172a"></span>Dark</button>
+      <button type="button" data-theme="greyscale"><span class="swatch" style="background:#000000"></span>Greyscale (high contrast)</button>
+    </div>
+  </div>
+</header>
+
 <div id="shell">
   <aside id="panel" aria-label="Controls and summary">
     <header class="panel-head">
+      <p class="eyebrow">NWS alerts &middot; University of Oklahoma</p>
       <h1>NWS Alert Climatology</h1>
       <p class="lede">How often the National Weather Service puts each county under every kind of watch, warning and advisory</p>
       <p class="freshness" id="freshness"><span class="live-dot" aria-hidden="true"></span><span id="freshness-text">Loading&hellip;</span></p>

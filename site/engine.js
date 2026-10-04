@@ -69,7 +69,7 @@ const CARTO = "https://basemaps.cartocdn.com/gl/";
 const BASEMAPS = {
   light: { label: "Light", tone: "light", style: CARTO + "positron-gl-style/style.json" },
   dark: { label: "Dark", tone: "dark", style: CARTO + "dark-matter-gl-style/style.json" },
-  // Imagery with labels on top, as in ok_fire_dash, with its own palette and
+  // Imagery with labels on top, as in okfirewarn, with its own palette and
   // fills that let some of the ground through.
   satellite: {
     label: "Satellite",
@@ -2042,7 +2042,38 @@ function buildControls() {
   }
 }
 
+// Themes -----------------------------------------------------------------------
+// The "Adjust colors" menu the institute's dashboards share. index.html sets
+// the theme before paint; this only switches it. The timeline and the card's
+// chart read their colors when drawn, so the page is rendered again.
+function buildThemeMenu() {
+  const btn = $("theme-btn"), menu = $("theme-menu");
+  const mark = () => {
+    for (const b of menu.querySelectorAll("button")) {
+      b.classList.toggle("active", b.dataset.theme === document.documentElement.dataset.theme);
+    }
+  };
+  const toggle = (open) => {
+    menu.classList.toggle("open", open);
+    btn.setAttribute("aria-expanded", String(menu.classList.contains("open")));
+  };
+  btn.addEventListener("click", () => toggle());
+  menu.addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-theme]");
+    if (!b) return;
+    document.documentElement.dataset.theme = b.dataset.theme;
+    try { sessionStorage.setItem("alertclimo-theme", b.dataset.theme); } catch { /* private mode */ }
+    mark();
+    toggle(false);
+    renderAll();
+  });
+  document.addEventListener("click", (e) => { if (!e.target.closest("#theme-switch")) toggle(false); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") toggle(false); });
+  mark();
+}
+
 async function boot() {
+  buildThemeMenu();
   const bust = `?v=${window.NAC_BUILD}`;
   manifest = await fetchJson(`data/manifest.json${bust}`);
   years = manifest.years;
