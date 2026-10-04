@@ -75,7 +75,7 @@ const BASEMAPS = {
     label: "Satellite",
     tone: "satellite",
     opacity: 0.72,
-    credit: "Imagery © Esri, Maxar, Earthstar Geographics · Labels © CARTO, OpenStreetMap",
+    credit: "Imagery and labels © Esri, Maxar, Earthstar Geographics",
     style: {
       version: 8,
       sources: {
@@ -86,11 +86,15 @@ const BASEMAPS = {
           maxzoom: 19,
           attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics",
         },
+        // CARTO's raster label tiles now need an API key and return a tile
+        // reading "API KEY REQUIRED" without one; Esri's reference layer,
+        // drawn for use over its imagery, does not.
         labels: {
           type: "raster",
-          tiles: ["https://basemaps.cartocdn.com/rastertiles/dark_only_labels/{z}/{x}/{y}.png"],
+          tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"],
           tileSize: 256,
-          attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
+          maxzoom: 19,
+          attribution: "Labels &copy; Esri",
         },
       },
       layers: [

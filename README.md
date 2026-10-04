@@ -264,8 +264,9 @@ Albers coordinates and takes its cell's color, so cell edges stay exact at
 every zoom. Browsers inflate the files with `DecompressionStream`.
 
 The only third-party requests are base map tiles: CARTO for the light and
-dark maps and all labels, Esri World Imagery for satellite. If they fail, the
-counties still draw on a plain background. Over imagery the colors run darkest
+dark maps, Esri for satellite imagery and the labels over it. CARTO's raster
+label tiles now need an API key, so the satellite map does not use them. If
+tiles fail, the counties still draw on a plain background. Over imagery the colors run darkest
 for the most, as on the light map, with the fills partly transparent.
 
 ## Deploying
