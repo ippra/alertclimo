@@ -1,10 +1,8 @@
-# Assemble the site and publish the beta to GitHub Pages.
+# Assemble the site and publish it to GitHub Pages.
 #
-# The beta lives at https://ippra.github.io/alertclimo/ and is built with
-# NAC_CHANNEL=beta: a Beta label in the masthead, a noindex tag and a
-# robots.txt that disallows everything. The production site at
-# ippra.net/alertclimo is not deployed from here; it is built without the
-# channel variable and copied to our own server. See README.md, "Deploying".
+# The site lives at https://ippra.github.io/alertclimo/. It is an IPPRA Labs
+# project, so this is its only deployment: nothing is copied to ippra.net.
+# See README.md, "Deploying".
 #
 # GitHub cannot rebuild the data: the pipeline reads an 18 GB archive that
 # lives on the build machine. So the counts the pipeline produces
@@ -14,7 +12,7 @@
 # data is published by pushing site-data and then running this workflow from
 # the Actions tab, or with the next push to main.
 
-name: Publish beta
+name: Publish
 
 on:
   workflow_dispatch:
@@ -59,8 +57,6 @@ jobs:
             any::here
 
       - name: Assemble site
-        env:
-          NAC_CHANNEL: beta
         run: Rscript 06_build_dashboard.R
 
       - uses: actions/upload-pages-artifact@v3

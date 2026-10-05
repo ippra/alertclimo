@@ -14,8 +14,11 @@ tornado watch or warning in effect), though the two correlate at 0.95 across
 counties. The site handles each of those differently (see Decisions below) and
 needs no server.
 
-- **Beta:** https://ippra.github.io/alertclimo/
-- **Release:** https://ippra.net/alertclimo
+- **Site:** https://ippra.github.io/alertclimo/
+
+It is an IPPRA Labs project: a working tool built on data other agencies
+publish, rather than one of the institute's own data products. Labs projects
+are hosted on GitHub Pages and are not released to ippra.net.
 
 The other analyses in this folder (`outlooks_data/`, `extended_outlooks_data/`,
 `watch_data/`, `tsmf_wwa_data/`) are unchanged and not part of the site.
@@ -271,19 +274,16 @@ for the most, as on the light map, with the fills partly transparent.
 
 ## Deploying
 
-Two deployments of one build. `outputs/06_site/` is the whole site: plain
-static files, no server code.
+One deployment: GitHub Pages. As an IPPRA Labs project the site is not copied
+to ippra.net.
 
-**Beta: GitHub Pages, on every push to `main`.**
-`.github/workflows/publish.yml` publishes https://ippra.github.io/alertclimo/.
-GitHub cannot rebuild the data, because the pipeline reads an 18 GB archive
-that lives on the build machine. So the workflow runs only step 06: it takes
-the front end from `main` and the built data from the `site-data` branch,
-which holds the contents of `outputs/05_site_data/` and nothing else. It sets
-`NAC_CHANNEL=beta`, which puts a Beta label beside the masthead title, adds a
-`noindex` tag and writes a `robots.txt` that disallows everything, so the beta
-is never found in place of production. The repository's Pages source must be
-set to GitHub Actions (Settings, Pages).
+`.github/workflows/publish.yml` publishes https://ippra.github.io/alertclimo/
+on every push to `main`. GitHub cannot rebuild the data, because the pipeline
+reads an 18 GB archive that lives on the build machine. So the workflow runs
+only step 06: it takes the front end from `main` and the built data from the
+`site-data` branch, which holds the contents of `outputs/05_site_data/` and
+nothing else. The repository's Pages source must be set to GitHub Actions
+(Settings, Pages).
 
 A change to `site/` is published by pushing it to `main`. New data, after the
 pipeline has run on the build machine, is published by replacing the
@@ -296,28 +296,20 @@ git -C /tmp/nac-data add -A && git -C /tmp/nac-data commit -m "Site data" && git
 ```
 
 Then press "Run workflow" on the Actions tab, or push to `main`. A failed run
-publishes nothing: the beta keeps its last good build and GitHub emails the
+publishes nothing: the site keeps its last good build and GitHub emails the
 repository owner.
 
-**Production: ippra.net, by hand. Matt deploys it.** No pipeline run is
-needed, only R for step 06. From a clone of `main`:
+The data covers whole calendar years, so it needs republishing only when a
+year is added (see Building and previewing).
 
-```
-git clone --branch site-data --depth 1 https://github.com/ippra/alertclimo.git outputs/05_site_data
-rm -rf outputs/05_site_data/.git
-Rscript 06_build_dashboard.R
-rsync -av --delete outputs/06_site/ <ippra.net host>:<docroot>/alertclimo/
-```
+The masthead carries a Labs badge on every build, and the site is open to
+search engines.
 
-Leave `NAC_CHANNEL` unset: that is what makes it the production build, with no
-Beta label and no `noindex`. R packages for this step: `tidyverse`,
-`jsonlite`, `here`.
+The site is plain static files with relative URLs, so it runs under any path.
+Should it ever move to another host:
 
-The site runs under any path, with relative URLs. Server settings:
-
-- Serve `index.html` with `Cache-Control: no-cache` (on the entry URLs
-  `/alertclimo`, `/alertclimo/` and `/alertclimo/index.html`), so a new deploy
-  is seen without a hard refresh.
+- Serve `index.html` with `Cache-Control: no-cache`, so a new build is seen
+  without a hard refresh.
 - `engine.js`, `engine.css` and the data files carry a `?v=<build>` stamp, and
   product files a content hash, so they can be cached as long as the server
   likes. The stamp changes when either the data or the front end does.
@@ -326,17 +318,6 @@ The site runs under any path, with relative URLs. Server settings:
 - The site is 68 MB on disk, but a visit loads only the manifest, the outlines
   and the products it opens: about 1 MB compressed for the first view, plus
   0.1-2 MB for each product viewed on the grid.
-
-After deploying, open https://ippra.net/alertclimo and check two things: the
-map loads, and there is no Beta label beside "AlertClimo" in the masthead.
-
-Link to it from ippra.net as `/alertclimo/?from=<path of the linking page>`,
-for example `/alertclimo/?from=/tools`. A visitor who arrives that way gets a
-"Back to IPPRA" link in the black bar that returns them to that page; anyone
-else sees the institute's name there.
-
-The data covers whole calendar years, so the release needs republishing only
-when a year is added (see Building and previewing) or the site changes.
 
 `06_build_dashboard.R` builds into `outputs/06_site.next` and swaps it in, so a
 host serving `outputs/06_site` never sees a half-copied site.
